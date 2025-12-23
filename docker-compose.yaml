@@ -1,0 +1,117 @@
+version: "3.9"
+
+services:
+  # -------------------------
+  # MINIO
+  # -------------------------
+  akv-minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "29000:9000"
+      - "29001:9001"
+    volumes:
+      - akv_minio_data:/data
+
+  # -------------------------
+  # POSTGRES
+  # -------------------------
+  akv-postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: akv_user
+      POSTGRES_PASSWORD: akv_pwd123
+      POSTGRES_DB: akv_itsm
+    ports:
+      - "55432:5432"
+    volumes:
+      - akv_postgres_data:/var/lib/postgresql/data
+
+  # -------------------------
+  # SPARK MASTER
+  # -------------------------
+  akv-spark-master:
+    image: apache/spark:3.5.3
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    environment:
+      SPARK_MASTER_HOST: akv-spark-master
+      SPARK_MASTER_PORT: 7077
+      SPARK_MASTER_WEBUI_PORT: 8081
+    ports:
+      - "18081:8081"
+      - "17077:7077"
+    volumes:
+      - ./data:/opt/data
+
+  # -------------------------
+  # SPARK WORKER
+  # -------------------------
+  akv-spark-worker:
+    image: apache/spark:3.5.3
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://akv-spark-master:7077
+    depends_on:
+      - akv-spark-master
+    environment:
+      SPARK_WORKER_CORES: 2
+      SPARK_WORKER_MEMORY: 2g
+    volumes:
+      - ./data:/opt/data
+
+  # -------------------------
+  # AIRFLOW (с Java)
+  # -------------------------
+  akv-airflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    
+    depends_on:
+      - akv-postgres
+      - akv-spark-master
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://akv_user:akv_pwd123@akv-postgres/akv_itsm
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__WEBSERVER__SECRET_KEY: 'supersecretkey123'
+      AIRFLOW_CONN_SPARK_DEFAULT: 'spark://spark%3A%2F%2Fakv-spark-master:7077'
+      AKV_MINIO_ENDPOINT: akv-minio:9000
+      AKV_RAW_BUCKET: akv-itsm-raw
+      AKV_DM_BUCKET: akv-itsm-dm
+      AKV_RAW_PREFIX: 2024/11
+      AKV_DM_PREFIX: 2024/11
+      AKV_POSTGRES_HOST: akv-postgres
+      AKV_POSTGRES_DB: akv_itsm
+      AKV_POSTGRES_USER: akv_user
+      AKV_POSTGRES_PASSWORD: akv_pwd123
+      _PIP_ADDITIONAL_REQUIREMENTS: "apache-airflow-providers-apache-spark==4.5.0 pyspark==3.5.3 minio==7.2.7"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./data:/opt/airflow/data
+    ports:
+      - "18080:8080"
+    command: standalone
+    user: "50000:0"
+
+  # -------------------------
+  # GRAFANA
+  # -------------------------
+  akv-grafana:
+    image: grafana/grafana-oss:latest
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "13000:3000"
+    volumes:
+      - akv_grafana_data:/var/lib/grafana
+
+# -------------------------
+# VOLUMES
+# -------------------------
+volumes:
+  akv_minio_data:
+  akv_postgres_data:
+  akv_grafana_data:

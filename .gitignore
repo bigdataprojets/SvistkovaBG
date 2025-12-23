@@ -1,0 +1,18 @@
+.DS_Store
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Airflow
+logs/
+
+# Data outputs
+data/generated/
+data/__pycache__/
+
+# Large binaries (keep local to avoid GitHub file limits)
+aws-java-sdk-bundle-*.jar
+hadoop-aws-*.jar

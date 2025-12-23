@@ -24,7 +24,7 @@ if [ -n "$POSTGRES_MULTIPLE_DATABASES" ] && [ -n "$POSTGRES_MULTIPLE_USERS" ] &&
     
     for i in "${!databases[@]}"; do
         if [ $i -eq 0 ]; then
-            continue  # Первая база (akv_itsm) уже создана
+            continue  # Первая база (sonya_wms_dwh) уже создана
         fi
         create_user_and_database "${databases[$i]}" "${users[$i-1]}" "${passwords[$i-1]}"
     done

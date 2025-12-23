@@ -7,9 +7,9 @@ print("=" * 60)
 try:
     spark = SparkSession.builder \
         .appName("MinIO_Connection_Test") \
-        .config("spark.hadoop.fs.s3a.endpoint", "http://akv-minio:9000") \
-        .config("spark.hadoop.fs.s3a.access.key", "minioadmin") \
-        .config("spark.hadoop.fs.s3a.secret.key", "minioadmin") \
+        .config("spark.hadoop.fs.s3a.endpoint", "http://sonya-wms-minio:9000") \
+        .config("spark.hadoop.fs.s3a.access.key", "sonyawms_admin") \
+        .config("spark.hadoop.fs.s3a.secret.key", "sonyawms_admin_pwd") \
         .config("spark.hadoop.fs.s3a.path.style.access", "true") \
         .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false") \
         .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
@@ -22,8 +22,7 @@ try:
     import traceback
     
     try:
-        # Читаем CSV из MinIO
-        df = spark.read.csv("s3a://akv-itsm-raw/2024/11/itsm_incidents.csv", header=True, inferSchema=True)
+        df = spark.read.csv("s3a://sonya-wms-raw/2024/12/equipment.csv", header=True, inferSchema=True)
         print(f"✅ Успешно прочитано из MinIO: {df.count()} строк")
         df.show(5)
         

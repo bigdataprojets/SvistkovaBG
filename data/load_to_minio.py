@@ -5,13 +5,13 @@ from minio import Minio
 from minio.error import S3Error
 
 
-# Имена переменных с префиксом AKV_, чтобы не конфликтовать с существующими кластерами
-MINIO_ENDPOINT = os.getenv("AKV_MINIO_ENDPOINT", os.getenv("MINIO_ENDPOINT", "localhost:29000"))
-MINIO_ACCESS_KEY = os.getenv("AKV_MINIO_ACCESS_KEY", os.getenv("MINIO_ACCESS_KEY", "minioadmin"))
-MINIO_SECRET_KEY = os.getenv("AKV_MINIO_SECRET_KEY", os.getenv("MINIO_SECRET_KEY", "minioadmin"))
-RAW_BUCKET = os.getenv("AKV_RAW_BUCKET", "akv-itsm-raw")
-DM_BUCKET = os.getenv("AKV_DM_BUCKET", "akv-itsm-dm")  # создаем заранее, чтобы Spark мог писать dm
-RAW_PREFIX = os.getenv("AKV_RAW_PREFIX", "2024/11")
+MINIO_ENDPOINT = os.getenv("SONYA_WMS_MINIO_ENDPOINT", os.getenv("MINIO_ENDPOINT", "localhost:49100"))
+MINIO_ACCESS_KEY = os.getenv("SONYA_WMS_MINIO_ACCESS_KEY", os.getenv("MINIO_ACCESS_KEY", "sonyawms_admin"))
+MINIO_SECRET_KEY = os.getenv("SONYA_WMS_MINIO_SECRET_KEY", os.getenv("MINIO_SECRET_KEY", "sonyawms_admin_pwd"))
+RAW_BUCKET = os.getenv("SONYA_WMS_RAW_BUCKET", "sonya-wms-raw")
+DDS_BUCKET = os.getenv("SONYA_WMS_DDS_BUCKET", "sonya-wms-dds")
+DM_BUCKET = os.getenv("SONYA_WMS_DM_BUCKET", "sonya-wms-dm")
+RAW_PREFIX = os.getenv("SONYA_WMS_RAW_PREFIX", "2024/12")
 
 
 def upload_raw() -> None:
@@ -23,12 +23,24 @@ def upload_raw() -> None:
         secure=False,
     )
 
-    for bucket in [RAW_BUCKET, DM_BUCKET]:
-        if not client.bucket_exists(bucket):
-            client.make_bucket(bucket)
-            print(f"Создал бакет {bucket}")
+    for bucket in [RAW_BUCKET, DDS_BUCKET, DM_BUCKET]:
+        try:
+            if not client.bucket_exists(bucket):
+                client.make_bucket(bucket)
+                print(f"Создал бакет {bucket}")
+        except S3Error as exc:
+            if exc.code not in {"BucketAlreadyOwnedByYou", "BucketAlreadyExists"}:
+                raise
+            print(f"Бакет {bucket} уже существует, продолжаю")
 
-    files = ["itsm_incidents.csv", "itsm_requests.csv"]
+    files = [
+        "storage_locations.csv",
+        "employees.csv",
+        "equipment.csv",
+        "inventory_sessions.csv",
+        "inventory_results.csv",
+        "maintenance_logs.csv",
+    ]
     for file in files:
         src_path = base_dir / "raw" / file
         if not src_path.exists():

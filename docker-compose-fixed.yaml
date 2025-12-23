@@ -1,11 +1,11 @@
 version: '3.8'
 services:
-  akv-airflow-fixed:
+  sonya-wms-airflow-fixed:
     image: apache/airflow:2.9.3-python3.11
     depends_on:
-      - akv-postgres
+      - sonya-wms-postgres
     environment:
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://akv_user:akv_pwd123@akv-postgres/akv_itsm
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://sonya_wms_user:sonya_wms_pwd123@sonya-wms-postgres/sonya_wms_dwh
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__WEBSERVER__SECRET_KEY: 'supersecretkey123'
@@ -13,7 +13,7 @@ services:
       _AIRFLOW_DB_UPGRADE: 'true'
       _AIRFLOW_WWW_USER_CREATE: 'true'
       _AIRFLOW_WWW_USER_USERNAME: 'admin'
-      _AIRFLOW_WWW_USER_PASSWORD: 'admin'
+      _AIRFLOW_WWW_USER_PASSWORD: 'sonya_wms_admin_pwd'
     volumes:
       - ./dags:/opt/airflow/dags
       - ./data:/opt/airflow/data
@@ -22,16 +22,16 @@ services:
       - "18080:8080"
     command: standalone
 
-  akv-postgres:
+  sonya-wms-postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: akv_user
-      POSTGRES_PASSWORD: akv_pwd123
-      POSTGRES_DB: akv_itsm
+      POSTGRES_USER: sonya_wms_user
+      POSTGRES_PASSWORD: sonya_wms_pwd123
+      POSTGRES_DB: sonya_wms_dwh
     ports:
-      - "55432:5432"
+      - "56432:5432"
     volumes:
-      - akv_postgres_data:/var/lib/postgresql/data
+      - sonya_wms_postgres_data:/var/lib/postgresql/data
 
 volumes:
-  akv_postgres_data:
+  sonya_wms_postgres_data:
